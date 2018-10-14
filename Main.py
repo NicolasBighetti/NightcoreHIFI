@@ -1,6 +1,5 @@
 import librosa
-#import IPython.display
-import matplotlib.pyplot as plt
+from collections import OrderedDict
 import numpy as np
 from pysndfx import AudioEffectsChain
 #import ffmpeg
@@ -81,11 +80,11 @@ nightcoreify_fx = (
     .equalizer(427, 1000.0, -5.0)
 )
 
-audio_path = 'evancore.wav'
+audio_path = 'cauetcore.wav'
 
 #mono=false
 track, rate = librosa.load(audio_path, sr=44100)
-#track, rate = librosa.load(audio_path, offset=0, duration=20, sr=None)
+#track, rate = librosa.load(audio_path, offset=0, duration=20, sr=44100)
 print("Track loaded")
 '''
 print('useless analysis')
@@ -112,13 +111,38 @@ print('Music modified')
 librosa.output.write_wav('output/' + audio_path + '/fx_test.wav', track, rate)
 
 print('Making the video')
+'''
+in_video = ffmpeg.input('pictures/1.jpg', framerate=25, loop=1, shortest=1)
+in_video = ffmpeg.filter(in_video, 'scale', size='hd1080')
 in_sound = ffmpeg.input('output/' + audio_path + '/fx_test.wav')
+#in_joined = ffmpeg.output(in_video, in_sound, 'output/' + audio_path + '/fx_video_test.mp4', crf=20, preset='slower', movflags='faststart', pix_fmt='yuv420p')
+in_joined = ffmpeg.output(in_video, in_sound, 'output/' + audio_path + '/fx_video_test.mp4', pix_fmt='yuv420p')
 in_joined.run()
 '''
 
+fsp = ffmpy.FFmpeg(
+    #global_options="-vcodec libx264",
+    inputs={'output/' + audio_path + '/fx_test.wav': None},
+    outputs={'output/' + audio_path + '/fsp.mp4': "-filter_complex \"[0:a]showfreqs=s=hd1080:mode=bar:ascale=log:win_func=flattop:overlap=0:colors=pink,scale=hd1080[v]\" -map \"[v]\" "}
+)
+print(fsp.cmd)
+fsp.run()
+
+inputs = OrderedDict([('pictures/8.jpg', None), ('output/' + audio_path + '/fsp.mp4', None)])
+wov = ffmpy.FFmpeg(
+    global_options="",
+    inputs=inputs,
+    outputs={'output/' + audio_path + '/fx_merge_test.mp4': "-shortest -filter_complex \"[0:v]scale=hd1080[bck];[1:v]format=argb,geq=r='r(X,Y)':a='0.5*alpha(X,Y)'[fb];[bck][fb]overlay[v]\" -map \"[v]\""}
+)
+
+print(wov.cmd)
+wov.run()
+#-filter_complex "[1:a]showfreqs=s=hd1080:mode=bar:ascale=log:win_func=flattop:overlap=0:colors=green,format=yuv420p[v]" -map "[v]" test_2.mkv
+inputs = OrderedDict([('output/' + audio_path + '/fx_merge_test.mp4', None), ('output/' + audio_path + '/fx_test.wav', None)])
+
 ff = ffmpy.FFmpeg(
-    global_options="-loop 1",
-    inputs={'pictures/1.jpg': None, 'output/' + audio_path + '/fx_test.wav': None},
+    global_options="",
+    inputs=inputs,
     outputs={'output/' + audio_path + '/fx_video_test.mp4': ['-vf', 'scale=1920:1080', '-shortest']}
 )
 print(ff.cmd)
