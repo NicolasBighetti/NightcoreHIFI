@@ -3,7 +3,8 @@ import librosa
 import matplotlib.pyplot as plt
 import numpy as np
 from pysndfx import AudioEffectsChain
-import ffmpeg
+#import ffmpeg
+import ffmpy
 #https://stackoverflow.com/questions/43963982/python-change-pitch-of-wav-file
 
 def vocals(voiced_track, sr):
@@ -111,9 +112,16 @@ print('Music modified')
 librosa.output.write_wav('output/' + audio_path + '/fx_test.wav', track, rate)
 
 print('Making the video')
-in_video = ffmpeg.input('pictures/1.jpg', framerate=25)
 in_sound = ffmpeg.input('output/' + audio_path + '/fx_test.wav')
-in_joined = ffmpeg.output(in_video, in_sound, 'output/' + audio_path + '/fx_video_test.flv')
 in_joined.run()
+'''
 
+ff = ffmpy.FFmpeg(
+    global_options="-loop 1",
+    inputs={'pictures/1.jpg': None, 'output/' + audio_path + '/fx_test.wav': None},
+    outputs={'output/' + audio_path + '/fx_video_test.mp4': ['-vf', 'scale=1920:1080', '-shortest']}
+)
+print(ff.cmd)
+
+ff.run()
 #librosa.output.write_wav('output/' + audio_path + '/beat_samples_test.wav', librosa.istft(beat_samples), rate)
